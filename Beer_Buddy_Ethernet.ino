@@ -33,74 +33,85 @@ void setup()
 
 void loop()
 {
-  if ( state == 'I' )
+  switch (state)
   {
-    i = 0;
+    case 'I':
+      stateChangeListener();
+    break;
     
-    if ( Serial.available() == 1 )
+    case 'R':
+      readRfid();
+    break;
+  }
+}
+
+void stateChangeListener()
+{
+  i = 0;
+  
+  if ( Serial.available() == 1 )
+  {
+    while ( Serial.available() )
     {
-      while ( Serial.available() )
+      received = (char)Serial.read();
+      
+      if ( i == 0 && received == 'R' )
       {
-        received = (char)Serial.read();
-        
-        if ( i == 0 && received == 'R' )
-        {
-          // Check if server is online
-          Serial.println("1");
-          state = 'R';
-        }
-        
-        ++i;
+        // Check if server is online
+        Serial.println("1");
+        state = 'R';
       }
+      
+      ++i;
     }
   }
+}
+
+void readRfid()
+{
+  i = 0;
+  y = 0;
   
-  if ( state == 'R' )
+  if ( Serial.available() == 12 )
   {
-    i = 0;
-    y = 0;
-    
-    if ( Serial.available() == 12 )
+    while ( Serial.available() )
     {
-      while ( Serial.available() )
+      received = (char)Serial.read();
+      
+      Serial.print("I: ");
+      Serial.print(i);
+      Serial.print(" - ");
+      Serial.print("Received: ");
+      Serial.print(received);
+      
+      if ( i != 0 && i <= 12 )
       {
-        received = (char)Serial.read();
+        Serial.print(" <= added to rfid[");
+        Serial.print(y);
+        Serial.print("]");
         
-        Serial.print("I: ");
-        Serial.print(i);
-        Serial.print(" - ");
-        Serial.print("Received: ");
-        Serial.print(received);
+        rfid[y] = received;
+        ++y;
         
-        if ( i != 0 && i <= 12 )
+        if ( i == 12 )
         {
-          Serial.print(" <= added to rfid[");
-          Serial.print(y);
-          Serial.print("]");
+          rfid[y] = '\0';
           
-          rfid[y] = received;
-          ++y;
-          
-          if ( i == 12 )
-          {
-            rfid[y] = '\0';
-            
-            //Serial.print("Y: ");
-            //Serial.print(y);
-            //Serial.println();
-          }
+          //Serial.print("Y: ");
+          //Serial.print(y);
+          //Serial.println();
         }
-        
-        Serial.println();
-        
-        ++i;
       }
       
-      user = ethernet.sendRFID(rfid);
+      Serial.println();
       
-      Serial.println(user);
-      
-      state = 'I';
+      ++i;
     }
+    
+    user = ethernet.sendRFID(rfid);
+    
+    Serial.println(user);
+    
+    state = 'I';
   }
 }
