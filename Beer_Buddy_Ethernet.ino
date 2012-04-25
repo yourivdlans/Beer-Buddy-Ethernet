@@ -13,6 +13,7 @@ char received;
 // I = Idle, R = RFID, A = Alcohol
 char state = 'I';
 char rfid[12];
+char* online;
 char* user;
 int i;
 int y;
@@ -42,6 +43,10 @@ void loop()
     case 'R':
       readRfid();
     break;
+    
+    case 'A':
+      Serial.println("Alcohol state detected.");
+    break;
   }
 }
 
@@ -55,11 +60,13 @@ void stateChangeListener()
     {
       received = (char)Serial.read();
       
-      if ( i == 0 && received == 'R' )
+      if ( i == 0 && ( received == 'R' || received == 'A' ) )
       {
         // Check if server is online
-        Serial.println("1");
-        state = 'R';
+        if ( checkServerOnline() )
+        {
+          state = received;
+        }
       }
       
       ++i;
@@ -84,7 +91,7 @@ void readRfid()
       Serial.print("Received: ");
       Serial.print(received);
       
-      if ( i != 0 && i <= 12 )
+      if ( i <= 11 )
       {
         Serial.print(" <= added to rfid[");
         Serial.print(y);
@@ -93,7 +100,7 @@ void readRfid()
         rfid[y] = received;
         ++y;
         
-        if ( i == 12 )
+        if ( i == 11 )
         {
           rfid[y] = '\0';
           
@@ -113,5 +120,19 @@ void readRfid()
     Serial.println(user);
     
     state = 'I';
+  }
+}
+
+boolean checkServerOnline()
+{
+  online = ethernet.checkOnline();
+  
+  if ( online[0] == '1' )
+  {
+    return true;
+  }
+  else
+  {
+    return false;
   }
 }
